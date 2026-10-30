@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會考複習題庫進度與計畫系統 (雲端同步版)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        morandi: {
+                            sage: '#8A9A86',
+                            sagedark: '#6E7E6A',
+                            terracotta: '#C58B80',
+                            oatmeal: '#F5F3EF',
+                            card: '#FFFFFF',
+                            slate: '#52616B',
+                            lightgrey: '#E8ECE9',
+                            sand: '#E2DACD',
+                            blueish: '#788896',
+                            purpleish: '#9E8B9E'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F5F3EF;
+            color: #333333;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F3EF;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C5C9C3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A9A86;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- Header Navigation -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-morandi-sand/40 px-4 lg:px-8 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-morandi-sage/20 text-morandi-sagedark rounded-xl">
+                    <i data-lucide="book-open-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-morandi-slate flex items-center gap-2">
+                        會考複習題庫進度與計畫系統
+                    </h1>
+                    <p class="text-xs text-gray-500">規劃進度 ‧ 雲端同步 ‧ 衝刺高分</p>
+                </div>
+            </div>
+
+            <!-- Header Action Buttons & Auth Status -->
+            <div class="flex items-center flex-wrap gap-2">
+                <button onclick="openTaskModal()" class="flex items-center space-x-1 px-3 py-2 bg-morandi-sage text-white rounded-lg hover:bg-morandi-sagedark transition shadow-sm font-medium text-xs md:text-sm">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>安排新進度</span>
+                </button>
+                
+                <button onclick="exportData()" class="p-2 text-morandi-slate bg-morandi-oatmeal hover:bg-morandi-lightgrey rounded-lg transition border border-gray-200" title="匯出資料備份">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+                <label class="p-2 text-morandi-slate bg-morandi-oatmeal hover:bg-morandi-lightgrey rounded-lg transition border border-gray-200 cursor-pointer" title="匯入資料備份">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+                <button onclick="clearAllTasks()" class="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition border border-red-200" title="清空所有進度">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Auth Area -->
+                <div class="h-6 w-[1px] bg-gray-300 mx-1 hidden sm:block"></div>
+                
+                <div id="authUnlogged" class="flex items-center gap-1">
+                    <button onclick="openAuthModal()" class="px-3 py-2 text-xs md:text-sm bg-morandi-slate text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-1">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>登入 / 註冊同步</span>
+                    </button>
+                </div>
+
+                <div id="authLogged" class="hidden flex items-center gap-2">
+                    <span id="userBadge" class="text-xs bg-morandi-sage/15 text-morandi-sagedark px-2.5 py-1 rounded-full font-medium max-w-[120px] truncate">使用者</span>
+                    <button id="syncLocalBtn" onclick="syncLocalStorageToCloud()" class="hidden px-2.5 py-1.5 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg border border-amber-200 font-medium flex items-center gap-1" title="將訪客紀錄同步至帳號">
+                        <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> 同步訪客資料
+                    </button>
+                    <button onclick="handleLogout()" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="登出帳號">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 mt-6 flex-grow w-full space-y-6">
+
+        <!-- Top Overview Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-500 mb-2">
+                    <span class="text-xs font-medium">規劃總回數</span>
+                    <i data-lucide="layers" class="w-4 h-4 text-morandi-blueish"></i>
+                </div>
+                <div class="flex items-baseline justify-between">
+                    <span id="stat-total" class="text-2xl font-bold text-morandi-slate">0</span>
+                    <span class="text-xs text-gray-400">總任務量</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-500 mb-2">
+                    <span class="text-xs font-medium">已完成題本</span>
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-morandi-sage"></i>
+                </div>
+                <div class="flex items-baseline justify-between">
+                    <span id="stat-completed" class="text-2xl font-bold text-morandi-sagedark">0</span>
+                    <span id="stat-progress-percent" class="text-xs font-semibold text-morandi-sage">0%</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-500 mb-2">
+                    <span class="text-xs font-medium">待完成 / 進行中</span>
+                    <i data-lucide="clock" class="w-4 h-4 text-morandi-terracotta"></i>
+                </div>
+                <div class="flex items-baseline justify-between">
+                    <span id="stat-pending" class="text-2xl font-bold text-morandi-terracotta">0</span>
+                    <span class="text-xs text-gray-400">請保持衝刺</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-500 mb-2">
+                    <span class="text-xs font-medium">精熟(A級)比例</span>
+                    <i data-lucide="award" class="w-4 h-4 text-yellow-500"></i>
+                </div>
+                <div class="flex items-baseline justify-between">
+                    <span id="stat-a-ratio" class="text-2xl font-bold text-morandi-slate">0%</span>
+                    <span id="stat-a-count" class="text-xs text-gray-500">0 回達標</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div class="flex items-center overflow-x-auto space-x-1 pb-2 md:pb-0 text-sm no-scrollbar">
+                <button onclick="filterBank('all')" id="btn-bank-all" class="bank-filter-btn px-3 py-1.5 rounded-lg bg-morandi-sage text-white font-medium text-xs md:text-sm whitespace-nowrap transition">全部題庫</button>
+                <button onclick="filterBank('康軒3800+')" id="btn-bank-康軒3800+" class="bank-filter-btn px-3 py-1.5 rounded-lg bg-morandi-oatmeal text-morandi-slate hover:bg-gray-200 font-medium text-xs md:text-sm whitespace-nowrap transition">康軒 3800+</button>
+                <button onclick="filterBank('翰林3800')" id="btn-bank-翰林3800" class="bank-filter-btn px-3 py-1.5 rounded-lg bg-morandi-oatmeal text-morandi-slate hover:bg-gray-200 font-medium text-xs md:text-sm whitespace-nowrap transition">翰林 3800</button>
+                <button onclick="filterBank('文揚題本')" id="btn-bank-文揚題本" class="bank-filter-btn px-3 py-1.5 rounded-lg bg-morandi-oatmeal text-morandi-slate hover:bg-gray-200 font-medium text-xs md:text-sm whitespace-nowrap transition">文揚題本</button>
+                <button onclick="filterBank('翰林題本')" id="btn-bank-翰林題本" class="bank-filter-btn px-3 py-1.5 rounded-lg bg-morandi-oatmeal text-morandi-slate hover:bg-gray-200 font-medium text-xs md:text-sm whitespace-nowrap transition">翰林題本</button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <select id="filterSubject" onchange="renderApp()" class="text-xs md:text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-morandi-sage text-morandi-slate">
+                    <option value="all">全科目</option>
+                    <option value="國文">國文</option>
+                    <option value="英文">英文</option>
+                    <option value="數學">數學</option>
+                    <option value="自然">自然</option>
+                    <option value="社會">社會</option>
+                </select>
+
+                <select id="filterStatus" onchange="renderApp()" class="text-xs md:text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-morandi-sage text-morandi-slate">
+                    <option value="all">全狀態</option>
+                    <option value="未開始">未開始</option>
+                    <option value="進行中">進行中</option>
+                    <option value="已完成">已完成</option>
+                </select>
+
+                <div class="relative flex-grow md:w-48">
+                    <input type="text" id="searchInput" oninput="renderApp()" placeholder="搜尋單元 / 備註..." class="w-full text-xs md:text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-morandi-sage">
+                    <i data-lucide="search" class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main View Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left 2 Columns: Task Cards List -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-bold text-morandi-slate flex items-center gap-2">
+                        <i data-lucide="list-todo" class="w-5 h-5 text-morandi-sage"></i>
+                        進度清單與測驗登記
+                    </h2>
+                    <span id="item-count-badge" class="text-xs bg-morandi-sand/40 text-morandi-slate px-2.5 py-1 rounded-full font-medium">共 0 項</span>
+                </div>
+
+                <div id="taskListContainer" class="space-y-3"></div>
+
+                <div id="emptyState" class="hidden bg-white rounded-xl p-12 text-center border border-dashed border-gray-300">
+                    <div class="w-12 h-12 bg-morandi-oatmeal text-morandi-sage rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-morandi-slate">目前無符合條件的進度安排</h3>
+                    <p class="text-xs text-gray-400 mt-1">點擊上方「安排新進度」按鈕開始規劃您的複習題庫計畫吧！</p>
+                </div>
+            </div>
+
+            <!-- Right Column: Progress & Charts -->
+            <div class="space-y-6">
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                    <h3 class="text-sm font-bold text-morandi-slate flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-morandi-terracotta"></i>
+                            四大題庫完成率
+                        </span>
+                    </h3>
+                    <div id="bankProgressContainer" class="space-y-3.5"></div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                    <h3 class="text-sm font-bold text-morandi-slate flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-morandi-blueish"></i>
+                        會考級分總體統計
+                    </h3>
+                    <div class="relative flex justify-center items-center h-48">
+                        <canvas id="gradeChart"></canvas>
+                    </div>
+                    <div class="text-xs text-center text-gray-400">依據已登記的會考級分 (A++ ~ C) 進行分析</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Task Modal (Add/Edit Plan) -->
+    <div id="taskModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-xl transform transition-all scale-95" id="taskModalPanel">
+            <div class="px-6 py-4 bg-morandi-oatmeal border-b border-gray-200 flex items-center justify-between">
+                <h3 id="modalTitle" class="text-base font-bold text-morandi-slate flex items-center gap-2">
+                    <i data-lucide="calendar-plus" class="w-5 h-5 text-morandi-sage"></i>
+                    新增進度安排
+                </h3>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="taskForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="taskId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">題庫類別 <span class="text-red-400">*</span></label>
+                        <select id="formBank" required class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                            <option value="康軒3800+">康軒 3800+</option>
+                            <option value="翰林3800">翰林 3800</option>
+                            <option value="文揚題本">文揚題本</option>
+                            <option value="翰林題本">翰林題本</option>
+                            <option value="自訂/其他題本">自訂/其他題本</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">科目 <span class="text-red-400">*</span></label>
+                        <select id="formSubject" required class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                            <option value="國文">國文</option>
+                            <option value="英文">英文</option>
+                            <option value="數學">數學</option>
+                            <option value="自然">自然</option>
+                            <option value="社會">社會</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-morandi-slate mb-1">單元 / 回數名稱 <span class="text-red-400">*</span></label>
+                    <input type="text" id="formUnit" required placeholder="例如：第 1 回、單元 1-2 詞性與修辭" class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">預計完成日期 <span class="text-red-400">*</span></label>
+                        <input type="date" id="formTargetDate" required class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">進度狀態</label>
+                        <select id="formStatus" onchange="toggleCompletionFields()" class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                            <option value="未開始">未開始</option>
+                            <option value="進行中">進行中</option>
+                            <option value="已完成">已完成 (登記成績)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="completionSection" class="p-4 bg-morandi-sage/10 rounded-xl border border-morandi-sage/30 space-y-3 hidden">
+                    <div class="text-xs font-bold text-morandi-sagedark flex items-center gap-1">
+                        <i data-lucide="check-square" class="w-4 h-4"></i> 成績與完成紀錄
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">實際完成時間</label>
+                            <input type="datetime-local" id="formCompletedAt" class="w-full text-sm bg-white border border-gray-200 rounded-lg p-2 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">會考級分</label>
+                            <select id="formGrade" class="w-full text-sm bg-white border border-gray-200 rounded-lg p-2 focus:outline-none">
+                                <option value="">未選擇</option>
+                                <option value="A++">A++ (精熟極佳)</option>
+                                <option value="A+">A+ (精熟優良)</option>
+                                <option value="A">A (精熟)</option>
+                                <option value="B++">B++ (基礎極佳)</option>
+                                <option value="B+">B+ (基礎優良)</option>
+                                <option value="B">B (基礎)</option>
+                                <option value="C">C (待加強)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">錯題筆記 / 檢討備註</label>
+                        <textarea id="formNotes" rows="2" placeholder="紀錄錯題概念、需要重讀的單元..." class="w-full text-sm bg-white border border-gray-200 rounded-lg p-2 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end space-x-2 border-t border-gray-100">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-morandi-sage text-white font-medium rounded-lg hover:bg-morandi-sagedark transition shadow-sm">儲存設定</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Login / Register) -->
+    <div id="authModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl max-w-md w-full mx-4 overflow-hidden shadow-xl transform transition-all scale-95" id="authModalPanel">
+            <div class="px-6 py-4 bg-morandi-oatmeal border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-base font-bold text-morandi-slate flex items-center gap-2">
+                    <i data-lucide="cloud-check" class="w-5 h-5 text-morandi-sage"></i>
+                    雲端帳號登入 / 註冊
+                </h3>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <!-- Google Login Button -->
+                <button onclick="handleGoogleLogin()" class="w-full py-2.5 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2 text-sm font-medium text-gray-700 shadow-xs">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                    使用 Google 帳號一鍵登入
+                </button>
+
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink mx-3 text-xs text-gray-400">或使用 Email 帳號</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+
+                <form onsubmit="handleEmailAuth(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">電子郵件 Email</label>
+                        <input type="email" id="authEmail" required placeholder="name@example.com" class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-morandi-slate mb-1">密碼 Password</label>
+                        <input type="password" id="authPassword" required placeholder="包含至少 6 位字元" class="w-full text-sm bg-morandi-oatmeal border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-morandi-sage focus:outline-none">
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" onclick="authMode = 'login'" class="flex-1 py-2 text-sm bg-morandi-sage text-white font-medium rounded-lg hover:bg-morandi-sagedark transition">登入</button>
+                        <button type="submit" onclick="authMode = 'register'" class="flex-1 py-2 text-sm bg-morandi-oatmeal text-morandi-slate font-medium rounded-lg hover:bg-gray-200 transition border border-gray-200">註冊新帳號</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-morandi-slate text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm">
+        <i data-lucide="info" class="w-4 h-4 text-morandi-sand"></i>
+        <span id="toastMsg">操作成功</span>
+    </div>
+
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithCustomToken, 
+            signInAnonymously, 
+            onAuthStateChanged,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-cap-study';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyCBDBxmH0xUidNqxbP4A2eYmgGzCDugC0o",
+            authDomain: "title-book.firebaseapp.com",
+            projectId: "title-book",
+            storageBucket: "title-book.firebasestorage.app",
+            messagingSenderId: "30891962097",
+            appId: "1:30891962097:web:975f8e0537f5f0b156c350"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let tasks = [];
+        let unsubscribeFirestore = null;
+        let currentBankFilter = 'all';
+        let gradeChartInstance = null;
+        window.authMode = 'login';
+
+        // Preload Presets
+        const initialSeedData = [
+            {
+                id: '1',
+                bank: '康軒3800+',
+                subject: '國文',
+                unit: '第 1 回 語文常識與字音字形',
+                targetDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+                status: '已完成',
+                completedAt: new Date(Date.now() - 86400000).toISOString().slice(0, 16),
+                grade: 'A++',
+                notes: '成語形近字錯了 2 題，需複習形近字辨析表。'
+            },
+            {
+                id: '2',
+                bank: '翰林3800',
+                subject: '數學',
+                unit: '第 1 回 一元一次方程式與幾何',
+                targetDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
+                status: '進行中',
+                completedAt: '',
+                grade: '',
+                notes: ''
+            },
+            {
+                id: '3',
+                bank: '文揚題本',
+                subject: '自然',
+                unit: '第 2 回 物理運動與力學',
+                targetDate: new Date(Date.now() + 86400000 * 6).toISOString().split('T')[0],
+                status: '未開始',
+                completedAt: '',
+                grade: '',
+                notes: ''
+            },
+            {
+                id: '4',
+                bank: '翰林題本',
+                subject: '英文',
+                unit: '第 1 回 閱讀理解與時態複習',
+                targetDate: new Date(Date.now() - 86400000 * 1).toISOString().split('T')[0],
+                status: '已完成',
+                completedAt: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 16),
+                grade: 'A+',
+                notes: '克漏字長句文法錯 1 題。'
+            }
+        ];
+
+        // System Initialization
+        window.onload = async function() {
+            initChart();
+            initAuthListener();
+            lucide.createIcons();
+        };
+
+        // Firebase Auth State Listener
+        function initAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                if (user && !user.isAnonymous) {
+                    // Logged in via Google / Email
+                    document.getElementById('authUnlogged').classList.add('hidden');
+                    document.getElementById('authLogged').classList.remove('hidden');
+                    document.getElementById('userBadge').textContent = user.displayName || user.email.split('@')[0];
+                    
+                    // Check local data for sync banner
+                    const localData = localStorage.getItem('cap_study_tasks');
+                    if (localData && JSON.parse(localData).length > 0) {
+                        document.getElementById('syncLocalBtn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('syncLocalBtn').classList.add('hidden');
+                    }
+
+                    bindFirestoreSnapshot(user.uid);
+                    showToast(`歡迎回來，${user.displayName || '雲端用戶'}`);
+                } else {
+                    // Visitor or anonymous
+                    document.getElementById('authUnlogged').classList.remove('hidden');
+                    document.getElementById('authLogged').classList.add('hidden');
+                    if (unsubscribeFirestore) unsubscribeFirestore();
+                    loadLocalTasks();
+                }
+            });
+
+            // Initial token auth fallback
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+            }
+        }
+
+        // Firestore Realtime Listener
+        function bindFirestoreSnapshot(uid) {
+            if (unsubscribeFirestore) unsubscribeFirestore();
+
+            const userTasksCol = collection(db, 'artifacts', appId, 'users', uid, 'tasks');
+            
+            unsubscribeFirestore = onSnapshot(userTasksCol, (snapshot) => {
+                const cloudTasks = [];
+                snapshot.forEach((doc) => {
+                    cloudTasks.push(doc.data());
+                });
+                tasks = cloudTasks;
+                renderApp();
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+                showToast("雲端同步發生錯誤");
+            });
+        }
+
+        // Load tasks from LocalStorage for non-logged users
+        function loadLocalTasks() {
+            const stored = localStorage.getItem('cap_study_tasks');
+            if (stored) {
+                try {
+                    tasks = JSON.parse(stored);
+                } catch(e) {
+                    tasks = initialSeedData;
+                }
+            } else {
+                tasks = initialSeedData;
+                localStorage.setItem('cap_study_tasks', JSON.stringify(tasks));
+            }
+            renderApp();
+        }
+
+        // Unified Task Save Helper
+        async function saveSingleTask(taskData) {
+            if (currentUser && !currentUser.isAnonymous) {
+                const taskDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', taskData.id);
+                await setDoc(taskDocRef, taskData);
+            } else {
+                const idx = tasks.findIndex(t => t.id === taskData.id);
+                if (idx !== -1) tasks[idx] = taskData;
+                else tasks.push(taskData);
+                localStorage.setItem('cap_study_tasks', JSON.stringify(tasks));
+                renderApp();
+            }
+        }
+
+        // Unified Task Delete Helper
+        async function deleteSingleTask(id) {
+            if (currentUser && !currentUser.isAnonymous) {
+                const taskDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id);
+                await deleteDoc(taskDocRef);
+            } else {
+                tasks = tasks.filter(t => t.id !== id);
+                localStorage.setItem('cap_study_tasks', JSON.stringify(tasks));
+                renderApp();
+            }
+        }
+
+        // Sync Local Storage to Firebase Firestore
+        window.syncLocalStorageToCloud = async function() {
+            if (!currentUser || currentUser.isAnonymous) return;
+            const stored = localStorage.getItem('cap_study_tasks');
+            if (!stored) return;
+
+            try {
+                const localTasks = JSON.parse(stored);
+                for (const task of localTasks) {
+                    const taskDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', task.id);
+                    await setDoc(taskDocRef, task);
+                }
+                localStorage.removeItem('cap_study_tasks');
+                document.getElementById('syncLocalBtn').classList.add('hidden');
+                showToast("已成功將訪客進度同步至您的雲端帳號！");
+            } catch(e) {
+                console.error("Sync error:", e);
+                showToast("同步失敗，請稍後再試");
+            }
+        }
+
+        // Auth Operations
+        window.handleGoogleLogin = async function() {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                closeAuthModal();
+            } catch (error) {
+                alert("Google 登入失敗: " + error.message);
+            }
+        }
+
+        window.handleEmailAuth = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+
+            try {
+                if (window.authMode === 'login') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+                closeAuthModal();
+            } catch (error) {
+                alert("認證錯誤: " + error.message);
+            }
+        }
+
+        window.handleLogout = async function() {
+            if (confirm("確定要登出系統嗎？")) {
+                await signOut(auth);
+                showToast("已登出雲端帳號");
+            }
+        }
+
+        // Main UI Render Loop
+        window.renderApp = function() {
+            const subjectFilter = document.getElementById('filterSubject').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const searchKeyword = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            const filteredTasks = tasks.filter(task => {
+                const matchBank = (currentBankFilter === 'all') || (task.bank === currentBankFilter);
+                const matchSubject = (subjectFilter === 'all') || (task.subject === subjectFilter);
+                const matchStatus = (statusFilter === 'all') || (task.status === statusFilter);
+                const matchSearch = searchKeyword === '' || 
+                                    task.unit.toLowerCase().includes(searchKeyword) || 
+                                    (task.notes && task.notes.toLowerCase().includes(searchKeyword));
+                return matchBank && matchSubject && matchStatus && matchSearch;
+            });
+
+            filteredTasks.sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate));
+
+            const container = document.getElementById('taskListContainer');
+            const emptyState = document.getElementById('emptyState');
+            document.getElementById('item-count-badge').textContent = `共 ${filteredTasks.length} 項`;
+
+            if (filteredTasks.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                container.innerHTML = filteredTasks.map(task => createTaskCardHTML(task)).join('');
+            }
+
+            updateStats();
+            updateBankProgress();
+            updateChartData();
+            lucide.createIcons();
+        }
+
+        function createTaskCardHTML(task) {
+            const subjectColors = {
+                '國文': 'bg-red-50 text-red-700 border-red-200',
+                '英文': 'bg-blue-50 text-blue-700 border-blue-200',
+                '數學': 'bg-amber-50 text-amber-700 border-amber-200',
+                '自然': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                '社會': 'bg-purple-50 text-purple-700 border-purple-200'
+            };
+
+            const gradeBadges = {
+                'A++': 'bg-red-100 text-red-700 border-red-300 font-bold',
+                'A+': 'bg-orange-100 text-orange-700 border-orange-300 font-bold',
+                'A': 'bg-amber-100 text-amber-800 border-amber-300 font-semibold',
+                'B++': 'bg-emerald-100 text-emerald-700 border-emerald-300',
+                'B+': 'bg-teal-100 text-teal-700 border-teal-300',
+                'B': 'bg-blue-100 text-blue-700 border-blue-300',
+                'C': 'bg-gray-100 text-gray-600 border-gray-300'
+            };
+
+            let statusBadge = '';
+            if (task.status === '已完成') {
+                statusBadge = `<span class="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-morandi-sage/20 text-morandi-sagedark font-medium"><i data-lucide="check-circle" class="w-3 h-3"></i>已完成</span>`;
+            } else if (task.status === '進行中') {
+                statusBadge = `<span class="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-600 font-medium border border-amber-200/60"><i data-lucide="loader" class="w-3 h-3"></i>進行中</span>`;
+            } else {
+                statusBadge = `<span class="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium"><i data-lucide="circle" class="w-3 h-3"></i>未開始</span>`;
+            }
+
+            const formattedCompletedDate = task.completedAt ? new Date(task.completedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+            return `
+                <div class="bg-white rounded-xl p-4 border border-gray-100 hover:border-morandi-sage/40 transition shadow-xs hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-2 flex-grow">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs px-2 py-0.5 rounded border ${subjectColors[task.subject] || 'bg-gray-100 text-gray-600'} font-medium">${task.subject}</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-morandi-oatmeal text-morandi-slate font-medium">${task.bank}</span>
+                            ${statusBadge}
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm md:text-base font-bold text-morandi-slate">${task.unit}</h3>
+                            ${task.grade ? `<span class="text-xs px-2 py-0.5 rounded border ${gradeBadges[task.grade] || 'bg-gray-100'}">${task.grade}</span>` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
+                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> 預計：${task.targetDate}</span>
+                            ${task.status === '已完成' && formattedCompletedDate ? `<span class="flex items-center gap-1 text-morandi-sagedark"><i data-lucide="clock" class="w-3.5 h-3.5"></i> 完成時間：${formattedCompletedDate}</span>` : ''}
+                        </div>
+
+                        ${task.notes ? `
+                            <div class="text-xs bg-morandi-oatmeal/60 p-2 rounded-lg text-gray-600 mt-1 flex items-start gap-1.5 border border-morandi-sand/30">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-morandi-terracotta shrink-0 mt-0.5"></i>
+                                <span>${task.notes}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex items-center justify-end space-x-2 border-t md:border-t-0 pt-2 md:pt-0 border-gray-100 shrink-0">
+                        ${task.status !== '已完成' ? `
+                            <button onclick="quickCompleteTask('${task.id}')" class="px-3 py-1.5 bg-morandi-sage/10 text-morandi-sagedark hover:bg-morandi-sage hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i> 完成登記
+                            </button>
+                        ` : ''}
+                        <button onclick="openTaskModal('${task.id}')" class="p-1.5 text-gray-400 hover:text-morandi-slate hover:bg-morandi-oatmeal rounded-lg transition" title="編輯">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="刪除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.status === '已完成').length;
+            const pending = total - completed;
+            const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            const aGradesCount = tasks.filter(t => t.status === '已完成' && ['A++', 'A+', 'A'].includes(t.grade)).length;
+            const aGradeRatio = completed > 0 ? Math.round((aGradesCount / completed) * 100) : 0;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-progress-percent').textContent = `${progressPercent}%`;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-a-ratio').textContent = `${aGradeRatio}%`;
+            document.getElementById('stat-a-count').textContent = `${aGradesCount} 回達標 A 級`;
+        }
+
+        function updateBankProgress() {
+            const presetBanks = ['康軒3800+', '翰林3800', '文揚題本', '翰林題本'];
+            const container = document.getElementById('bankProgressContainer');
+
+            container.innerHTML = presetBanks.map(bankName => {
+                const bankTasks = tasks.filter(t => t.bank === bankName);
+                const bankTotal = bankTasks.length;
+                const bankCompleted = bankTasks.filter(t => t.status === '已完成').length;
+                const pct = bankTotal > 0 ? Math.round((bankCompleted / bankTotal) * 100) : 0;
+
+                return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium text-morandi-slate">
+                            <span>${bankName}</span>
+                            <span class="text-gray-400">${bankCompleted} / ${bankTotal} (${pct}%)</span>
+                        </div>
+                        <div class="w-full h-2 bg-morandi-oatmeal rounded-full overflow-hidden">
+                            <div class="h-full bg-morandi-sage transition-all duration-500 rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('gradeChart').getContext('2d');
+            gradeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['A++', 'A+', 'A', 'B++', 'B+', 'B', 'C'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: ['#DC2626', '#EA580C', '#D97706', '#059669', '#0D9488', '#2563EB', '#6B7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function updateChartData() {
+            if (!gradeChartInstance) return;
+            const gradeCounts = { 'A++': 0, 'A+': 0, 'A': 0, 'B++': 0, 'B+': 0, 'B': 0, 'C': 0 };
+            tasks.forEach(task => {
+                if (task.status === '已完成' && task.grade && gradeCounts.hasOwnProperty(task.grade)) {
+                    gradeCounts[task.grade]++;
+                }
+            });
+            gradeChartInstance.data.datasets[0].data = Object.values(gradeCounts);
+            gradeChartInstance.update();
+        }
+
+        window.filterBank = function(bankName) {
+            currentBankFilter = bankName;
+            document.querySelectorAll('.bank-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-morandi-sage', 'text-white');
+                btn.classList.add('bg-morandi-oatmeal', 'text-morandi-slate');
+            });
+
+            const activeBtn = document.getElementById(`btn-bank-${bankName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-morandi-oatmeal', 'text-morandi-slate');
+                activeBtn.classList.add('bg-morandi-sage', 'text-white');
+            }
+            renderApp();
+        }
+
+        window.toggleCompletionFields = function() {
+            const status = document.getElementById('formStatus').value;
+            const completionSection = document.getElementById('completionSection');
+            if (status === '已完成') {
+                completionSection.classList.remove('hidden');
+                if (!document.getElementById('formCompletedAt').value) {
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    document.getElementById('formCompletedAt').value = now.toISOString().slice(0,16);
+                }
+            } else {
+                completionSection.classList.add('hidden');
+            }
+        }
+
+        window.openTaskModal = function(taskId = null) {
+            const modal = document.getElementById('taskModal');
+            const panel = document.getElementById('taskModalPanel');
+            const form = document.getElementById('taskForm');
+            form.reset();
+
+            if (taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    document.getElementById('taskId').value = task.id;
+                    document.getElementById('formBank').value = task.bank;
+                    document.getElementById('formSubject').value = task.subject;
+                    document.getElementById('formUnit').value = task.unit;
+                    document.getElementById('formTargetDate').value = task.targetDate;
+                    document.getElementById('formStatus').value = task.status;
+                    document.getElementById('formCompletedAt').value = task.completedAt || '';
+                    document.getElementById('formGrade').value = task.grade || '';
+                    document.getElementById('formNotes').value = task.notes || '';
+                    document.getElementById('modalTitle').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-morandi-sage"></i> 編輯進度計畫`;
+                }
+            } else {
+                document.getElementById('taskId').value = '';
+                document.getElementById('formTargetDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('modalTitle').innerHTML = `<i data-lucide="calendar-plus" class="w-5 h-5 text-morandi-sage"></i> 新增進度安排`;
+            }
+
+            toggleCompletionFields();
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                panel.classList.remove('scale-95');
+                panel.classList.add('scale-100');
+            }, 10);
+            lucide.createIcons();
+        }
+
+        window.closeTaskModal = function() {
+            const modal = document.getElementById('taskModal');
+            const panel = document.getElementById('taskModalPanel');
+            panel.classList.remove('scale-100');
+            panel.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        window.openAuthModal = function() {
+            const modal = document.getElementById('authModal');
+            const panel = document.getElementById('authModalPanel');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                panel.classList.remove('scale-95');
+                panel.classList.add('scale-100');
+            }, 10);
+            lucide.createIcons();
+        }
+
+        window.closeAuthModal = function() {
+            const modal = document.getElementById('authModal');
+            const panel = document.getElementById('authModalPanel');
+            panel.classList.remove('scale-100');
+            panel.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            const taskId = document.getElementById('taskId').value;
+
+            const taskData = {
+                id: taskId || Date.now().toString(),
+                bank: document.getElementById('formBank').value,
+                subject: document.getElementById('formSubject').value,
+                unit: document.getElementById('formUnit').value.trim(),
+                targetDate: document.getElementById('formTargetDate').value,
+                status: document.getElementById('formStatus').value,
+                completedAt: document.getElementById('formStatus').value === '已完成' ? document.getElementById('formCompletedAt').value : '',
+                grade: document.getElementById('formStatus').value === '已完成' ? document.getElementById('formGrade').value : '',
+                notes: document.getElementById('formNotes').value.trim()
+            };
+
+            await saveSingleTask(taskData);
+            showToast(taskId ? '進度更新成功' : '已新增進度安排');
+            closeTaskModal();
+        }
+
+        window.quickCompleteTask = function(id) {
+            openTaskModal(id);
+            document.getElementById('formStatus').value = '已完成';
+            toggleCompletionFields();
+        }
+
+        window.deleteTask = async function(id) {
+            if (confirm('確定要刪除這筆進度安排嗎？')) {
+                await deleteSingleTask(id);
+                showToast('已刪除該進度');
+            }
+        }
+
+        window.clearAllTasks = async function() {
+            if (tasks.length === 0) {
+                showToast('目前沒有任何任務可刪除');
+                return;
+            }
+            if (confirm('⚠️ 警告：您確定要清空「所有」複習進度嗎？此操作無法復原！')) {
+                for (const t of [...tasks]) {
+                    await deleteSingleTask(t.id);
+                }
+                showToast('已清空所有進度資料');
+            }
+        }
+
+        window.exportData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `會考題庫進度備份_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('已下載 JSON 資料備份檔');
+        }
+
+        window.importData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedTasks = JSON.parse(e.target.result);
+                    if (Array.isArray(importedTasks)) {
+                        for (const task of importedTasks) {
+                            await saveSingleTask(task);
+                        }
+                        showToast('成功匯入進度備份！');
+                    } else {
+                        alert('檔案格式不合，請匯入正確的 JSON 備份檔。');
+                    }
+                } catch(err) {
+                    alert('讀取檔案失敗，請確保為有效的 JSON 格式。');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = message;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
