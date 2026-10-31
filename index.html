@@ -417,6 +417,8 @@
             onAuthStateChanged,
             GoogleAuthProvider,
             signInWithPopup,
+            signInWithRedirect,
+            getRedirectResult,
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword,
             signOut
@@ -501,12 +503,22 @@
         ];
 
         // System Initialization
+       // System Initialization
         window.onload = async function() {
             initChart();
             initAuthListener();
             lucide.createIcons();
+        
+            // ➕ 將這段加上去：檢查重新導向登入結果
+            getRedirectResult(auth)
+                .then((result) => {
+                    if (result && result.user) {
+                        console.log("Google 重新導向登入成功！", result.user);
+                    }
+                }).catch((error) => {
+                    console.error("Redirect login error:", error);
+                });
         };
-
         // Firebase Auth State Listener
         function initAuthListener() {
             onAuthStateChanged(auth, async (user) => {
