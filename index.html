@@ -503,12 +503,13 @@
         ];
 
         // System Initialization
+       // System Initialization
         window.onload = async function() {
             initChart();
             initAuthListener();
             lucide.createIcons();
-
-            // 檢查重新導向登入結果
+        
+            // ➕ 將這段加上去：檢查重新導向登入結果
             getRedirectResult(auth)
                 .then((result) => {
                     if (result && result.user) {
@@ -518,7 +519,6 @@
                     console.error("Redirect login error:", error);
                 });
         };
-
         // Firebase Auth State Listener
         function initAuthListener() {
             onAuthStateChanged(auth, async (user) => {
