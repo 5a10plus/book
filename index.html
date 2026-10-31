@@ -628,8 +628,8 @@
         window.handleGoogleLogin = async function() {
             const provider = new GoogleAuthProvider();
             try {
-                await signInWithPopup(auth, provider);
-                closeAuthModal();
+                // ✅ 改用重新導向，完全避開 popup 視窗關閉限制
+                await signInWithRedirect(auth, provider);
             } catch (error) {
                 alert("Google 登入失敗: " + error.message);
             }
