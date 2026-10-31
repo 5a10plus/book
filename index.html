@@ -432,15 +432,15 @@
 
         // Global Variables
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-cap-study';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyCBDBxmH0xUidNqxbP4A2eYmgGzCDugC0o",
-            authDomain: "title-book.firebaseapp.com",
-            projectId: "title-book",
-            storageBucket: "title-book.firebasestorage.app",
-            messagingSenderId: "30891962097",
-            appId: "1:30891962097:web:975f8e0537f5f0b156c350"
+        const firebaseConfig = {
+          apiKey: "AIzaSyDQt0kJFI285_tTTskgMeKWiGM-rZp4PwU",
+          authDomain: "cap-book.firebaseapp.com",
+          projectId: "cap-book",
+          storageBucket: "cap-book.firebasestorage.app",
+          messagingSenderId: "602049744950",
+          appId: "1:602049744950:web:4b8417143898deea124897",
+          measurementId: "G-RDHLEFG4G5"
         };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
